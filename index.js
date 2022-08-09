@@ -6,10 +6,12 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 
 const dishes = require("./dishes");
+const orders = require("./orders");
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/dishes", dishes);
+app.use("/orders", orders);
 
 app.get("/", (req, res) => {
   res.send("hello");
