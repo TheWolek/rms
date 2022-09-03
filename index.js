@@ -5,6 +5,7 @@ const port = 3000;
 const cors = require("cors");
 const bodyParser = require("body-parser");
 
+const getAllDishes = require("./utils/getAllDishes");
 const dishes = require("./dishes");
 const orders = require("./orders");
 
@@ -19,4 +20,5 @@ app.get("/", (req, res) => {
 
 app.listen(port, () => {
   console.log(`app @ ${port}`);
+  getAllDishes.getAllDishes();
 });
