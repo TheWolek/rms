@@ -167,4 +167,53 @@ router.post("/", (req, res) => {
     });
 });
 
+router.put("/:id", (req, res) => {
+  // recive {status: STR ("new", "inProg", "rdy", "done"), isClosed: BOOL}
+  // return 400 if no params were passed
+  // return 400 if any of parameters does not match
+  // return 500 if there was DB error
+
+  const statuses = ["new", "inProg", "rdy", "done"];
+  let toChange = "";
+  let toChangeCount = 0;
+
+  if (req.params.id === undefined) {
+    return res.status(400).json({ message: "pole id jest wymagane" });
+  }
+
+  if (req.body.status === undefined && req.body.isClosed === undefined) {
+    return res
+      .status(400)
+      .json({ message: "podaj przynajmniej jeden parametr" });
+  }
+
+  if (req.body.status !== undefined) {
+    if (!statuses.includes(req.body.status)) {
+      return res.status(400).json({ message: "zły format pola status" });
+    }
+
+    toChange += `status = "${req.body.status}"`;
+    toChangeCount++;
+  }
+
+  if (req.body.isClosed !== undefined) {
+    if (typeof req.body.isClosed !== "boolean") {
+      return res.status(400).json({ message: "zły format pola isClosed" });
+    }
+
+    let isClosed = req.body.isClosed === true ? 1 : 0;
+
+    if (toChangeCount > 0) toChange += ", ";
+    toChange += `isClosed = ${isClosed}`;
+    toChangeCount++;
+  }
+
+  let sql = `UPDATE orders SET ${toChange} WHERE orderId = ${req.params.id}`;
+
+  connection.query(sql, (err, result) => {
+    if (err) return res.status(500).json(err);
+    res.status(200).json({});
+  });
+});
+
 module.exports = router;
