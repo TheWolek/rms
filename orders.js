@@ -126,13 +126,25 @@ router.post("/", (req, res) => {
           let items = "";
 
           for (let i = 0; i < req.body.items.length; i++) {
-            const item = req.body.items[i];
+            const itemId = req.body.items[i];
+            let item = global.DISHES.find((o) => o.dishId === itemId);
+            if (item.isBunddle) {
+              let subItems = item.bunddleItems;
+              for (let i = 0; i < subItems.length; i++) {
+                const el = subItems[i];
 
-            items += `(${item}, ${orderInsertedId}, "new")`;
+                items += `(${el}, ${orderInsertedId}, "new")`;
+                if (i < subItems.length - 1) items += ", ";
+              }
+            } else {
+              items += `(${itemId}, ${orderInsertedId}, "new")`;
+            }
+
             if (i < req.body.items.length - 1) items += ", ";
           }
 
           let sqlOrderDishes = `INSERT INTO dishesInOrders (dishId, orderId, dishStatus) VALUES ${items}`;
+          console.log(sqlOrderDishes);
 
           connection.query(sqlOrderDishes, function (err, result) {
             if (err) return res.status(500).json(err);
