@@ -51,12 +51,36 @@ router.put("/complete", (req, res) => {
     return res.status(400).json({ message: "zły format pola newStatus" });
   }
 
-  let sql = `UPDATE dishesInOrders SET dishStatus = ${req.body.newStatus} WHERE id = ${id}`;
+  function checkIfDishExists() {
+    return new Promise(function (resolve, reject) {
+      let sql = `SELECT id FROM dishesInOrders WHERE id = ${req.body.id}`;
 
-  connection.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.status(200).json({});
-  });
+      connection.query(sql, function (err, rows) {
+        if (err) return reject(err);
+        if (rows.length === 0) return reject(false);
+        resolve(rows);
+      });
+    });
+  }
+
+  checkIfDishExists()
+    .then(() => {
+      let sql = `UPDATE dishesInOrders SET dishStatus = '${req.body.newStatus}' WHERE id = ${req.body.id}`;
+
+      connection.query(sql, (err, result) => {
+        if (err) return res.status(500).json(err);
+        return res.status(200).json({});
+      });
+    })
+    .catch((err) => {
+      if (err === false) {
+        return res
+          .status(404)
+          .json({ message: "nie znaleziono dania o podanym identyfikatorze" });
+      } else {
+        return res.status(500).json(err);
+      }
+    });
 });
 
 module.exports = router;
