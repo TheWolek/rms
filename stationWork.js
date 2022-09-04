@@ -21,11 +21,52 @@ router.get("/:station", (req, res) => {
     return res.status(400).json({ message: "zły format pola station" });
   }
 
-  let sql = `SELECT * FROM ${req.params.station}StationWork`;
+  let sql = ``;
+
+  if (req.params.station === "collect") {
+    sql = `SELECT d.dishId, d.displayName, dio.id, dio.dishStatus, dio.orderId, o.takeAway, o.displayOrderId
+    FROM dishesInOrders dio 
+    JOIN dishes d ON dio.dishId = d.dishId
+    JOIN orders o ON dio.orderId = o.orderId
+    WHERE o.isClosed = 0;`;
+  } else {
+    sql = `SELECT * FROM ${req.params.station}StationWork`;
+  }
 
   connection.query(sql, (err, rows) => {
     if (err) return res.status(500).json(err);
-    return res.status(200).json(rows);
+
+    if (req.params.station === "collect") {
+      let output = [];
+      rows.forEach((el) => {
+        let foundItem = output.find((o) => o.orderId === el.orderId);
+        if (foundItem) {
+          foundItem.items.push({
+            dishId: el.dishId,
+            displayName: el.displayName,
+            id: el.id,
+            dishStatus: el.dishStatus,
+          });
+        } else {
+          output.push({
+            orderId: el.orderId,
+            displayOrderId: el.displayOrderId,
+            takeAway: el.takeAway === 1 ? true : false,
+            items: [
+              {
+                dishId: el.dishId,
+                displayName: el.displayName,
+                id: el.id,
+                dishStatus: el.dishStatus,
+              },
+            ],
+          });
+        }
+      });
+      return res.status(200).json(output);
+    } else {
+      return res.status(200).json(rows);
+    }
   });
 });
 
