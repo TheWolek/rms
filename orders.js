@@ -171,6 +171,7 @@ router.put("/:id", (req, res) => {
   // recive {status: STR ("new", "inProg", "rdy", "done")}
   // return 400 if no params were passed
   // return 400 if any of parameters does not match
+  // return 400 if new status is "rdy" and not all items are ready
   // return 500 if there was DB error
 
   const statuses = ["new", "inProg", "rdy", "done"];
@@ -230,6 +231,71 @@ router.put("/:id", (req, res) => {
       });
     }
   }
+});
+
+router.post("/:id/finish", (req, res) => {
+  //recive id:INT via params
+  //return 400 if id is not valid
+  //return 400 if there is no such order
+  //return 400 if order is not in rdy state
+  //return 500 if there was DB error
+  //return 200 on success
+
+  if (req.params.id === undefined) {
+    return res.status(400).json({ message: "pole id jest wymagane" });
+  }
+
+  const reg = /^\d{1,}$/;
+  console.log(reg.test(req.params.id));
+
+  if (!req.params.id.match(reg)) {
+    return res.status(400).json({ message: "zły format pola id" });
+  }
+
+  function getOrder() {
+    return new Promise(function (resolve, reject) {
+      let sql = `SELECT * FROM orders WHERE orderId = ${req.params.id}`;
+
+      connection.query(sql, function (err, rows) {
+        if (err) return reject(err);
+        if (rows.length === 0) return reject(false);
+        resolve(rows);
+      });
+    });
+  }
+
+  getOrder()
+    .then((rows) => {
+      if (rows[0].status !== "rdy") {
+        return res
+          .status(400)
+          .json({ message: "nie można zakończyć nie gotowego zamówienia" });
+      }
+
+      if (rows[0].isClosed === 1) {
+        return res
+          .status(400)
+          .json({ message: "zamówienie jest juz zakończone" });
+      }
+
+      let orderId = rows[0].orderId;
+
+      let sql = `UPDATE orders SET isClosed = 1 WHERE orderId = ${orderId}; DELETE FROM dishesInOrders WHERE orderId = ${orderId};`;
+
+      connection.query(sql, (err, result) => {
+        if (err) return res.status(500).json(err);
+        return res.status(200).json({});
+      });
+    })
+    .catch((err) => {
+      if (err === false) {
+        res
+          .status(400)
+          .json({ message: "zamówienie o podanym id nie istnieje" });
+      } else {
+        res.status(500).json(err);
+      }
+    });
 });
 
 module.exports = router;
