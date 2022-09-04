@@ -168,23 +168,19 @@ router.post("/", (req, res) => {
 });
 
 router.put("/:id", (req, res) => {
-  // recive {status: STR ("new", "inProg", "rdy", "done"), isClosed: BOOL}
+  // recive {status: STR ("new", "inProg", "rdy", "done")}
   // return 400 if no params were passed
   // return 400 if any of parameters does not match
   // return 500 if there was DB error
 
   const statuses = ["new", "inProg", "rdy", "done"];
-  let toChange = "";
-  let toChangeCount = 0;
 
   if (req.params.id === undefined) {
     return res.status(400).json({ message: "pole id jest wymagane" });
   }
 
-  if (req.body.status === undefined && req.body.isClosed === undefined) {
-    return res
-      .status(400)
-      .json({ message: "podaj przynajmniej jeden parametr" });
+  if (req.body.status === undefined) {
+    return res.status(400).json({ message: "pole status jest wymagane" });
   }
 
   if (req.body.status !== undefined) {
@@ -192,28 +188,48 @@ router.put("/:id", (req, res) => {
       return res.status(400).json({ message: "zły format pola status" });
     }
 
-    toChange += `status = "${req.body.status}"`;
-    toChangeCount++;
-  }
+    if (req.body.status === "rdy") {
+      function checkIfAllItemsAreReady() {
+        return new Promise(function (resolve, reject) {
+          let sql = `SELECT count(orderId) as allItems, 
+            (select count(dishStatus) from dishesInOrders dio where orderId = ${req.params.id} and dishStatus = 'done') as readyItems 
+            FROM dishesInOrders dio
+            where orderId = ${req.params.id};`;
 
-  if (req.body.isClosed !== undefined) {
-    if (typeof req.body.isClosed !== "boolean") {
-      return res.status(400).json({ message: "zły format pola isClosed" });
+          connection.query(sql, function (err, rows) {
+            if (err) return reject(err);
+
+            resolve(rows);
+          });
+        });
+      }
+
+      checkIfAllItemsAreReady()
+        .then((rows) => {
+          if (rows[0].allItems !== rows[0].readyItems) {
+            return res
+              .status(400)
+              .json({ message: "zamówienie nie jest jeszcze gotowe" });
+          }
+
+          let sql = `UPDATE orders SET status = '${req.body.status}' WHERE orderId = ${req.params.id}`;
+
+          connection.query(sql, (err, result) => {
+            if (err) return res.status(500).json(err);
+            return res.status(200).json({});
+          });
+        })
+        .catch((err) => {
+          return res.status(500).json(err);
+        });
+    } else {
+      let sql = `UPDATE orders SET status = '${req.body.status}' WHERE orderId = ${req.params.id}`;
+      connection.query(sql, (err, result) => {
+        if (err) return res.status(500).json(err);
+        return res.status(200).json({});
+      });
     }
-
-    let isClosed = req.body.isClosed === true ? 1 : 0;
-
-    if (toChangeCount > 0) toChange += ", ";
-    toChange += `isClosed = ${isClosed}`;
-    toChangeCount++;
   }
-
-  let sql = `UPDATE orders SET ${toChange} WHERE orderId = ${req.params.id}`;
-
-  connection.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.status(200).json({});
-  });
 });
 
 module.exports = router;
