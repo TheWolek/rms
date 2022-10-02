@@ -96,7 +96,6 @@ router.post("/", (req, res) => {
 
       connection.query(sql, function (err, rows) {
         if (err) return reject(err);
-
         resolve(rows);
       });
     });
@@ -117,7 +116,8 @@ router.post("/", (req, res) => {
 
   getLastOrderId()
     .then(function (rows) {
-      const lastId = rows[0].displayOrderId;
+      let lastId = 0;
+      if (rows.length !== 0) lastId = rows[0].displayOrderId;
       const newID = lastId + 1;
 
       getInsertedOrderId(newID)
@@ -144,7 +144,6 @@ router.post("/", (req, res) => {
           }
 
           let sqlOrderDishes = `INSERT INTO dishesInOrders (dishId, orderId, dishStatus) VALUES ${items}`;
-          console.log(sqlOrderDishes);
 
           connection.query(sqlOrderDishes, function (err, result) {
             if (err) return res.status(500).json(err);
@@ -246,7 +245,6 @@ router.post("/:id/finish", (req, res) => {
   }
 
   const reg = /^\d{1,}$/;
-  console.log(reg.test(req.params.id));
 
   if (!req.params.id.match(reg)) {
     return res.status(400).json({ message: "zły format pola id" });
@@ -280,7 +278,7 @@ router.post("/:id/finish", (req, res) => {
 
       let orderId = rows[0].orderId;
 
-      let sql = `UPDATE orders SET isClosed = 1 WHERE orderId = ${orderId}; DELETE FROM dishesInOrders WHERE orderId = ${orderId};`;
+      let sql = `UPDATE orders SET isClosed = 1, status = 'done' WHERE orderId = ${orderId}; DELETE FROM dishesInOrders WHERE orderId = ${orderId};`;
 
       connection.query(sql, (err, result) => {
         if (err) return res.status(500).json(err);

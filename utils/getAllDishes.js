@@ -27,7 +27,6 @@ function getAllDishes() {
     }
 
     global.DISHES = rows;
-    // console.log(DISHES);
   });
 }
 
