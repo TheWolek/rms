@@ -9,7 +9,7 @@ function getAllDishes() {
   let sql = `SELECT * from dishes where available = 1`;
 
   connection.query(sql, (err, rows) => {
-    if (err) return res.status(500).json(err);
+    if (err) return console.log(err);
 
     for (let i = 0; i < rows.length; i++) {
       let el = rows[i];
