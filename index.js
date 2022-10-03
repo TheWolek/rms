@@ -12,6 +12,16 @@ const dishes = require("./dishes");
 const orders = require("./orders");
 const stationWork = require("./stationWork");
 
+const checkHeaders = function (req, res, next) {
+  const apikey = req.get("x-api-key");
+  if (!apikey) return res.status(401).json({});
+  if (apikey !== process.env.API_KEY) return res.status(401).json({});
+  console.log(req.get("x-api-key"));
+  next();
+};
+
+app.use(checkHeaders);
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/dishes", dishes);
