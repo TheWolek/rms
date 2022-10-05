@@ -6,7 +6,7 @@ connection.connect();
 global.DISHES = [];
 
 function getAllDishes() {
-  let sql = `SELECT * from dishes where available = 1`;
+  let sql = `SELECT * from dishes d join dish_categories dc on d.category_id = dc.category_id where available = 1`;
 
   connection.query(sql, (err, rows) => {
     if (err) return console.log(err);

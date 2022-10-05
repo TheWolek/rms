@@ -20,9 +20,9 @@ const checkHeaders = function (req, res, next) {
   next();
 };
 
+app.use(cors());
 app.use(checkHeaders);
 
-app.use(cors());
 app.use(bodyParser.json());
 app.use("/dishes", dishes);
 app.use("/orders", orders);
