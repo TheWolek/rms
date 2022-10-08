@@ -24,7 +24,7 @@ router.get("/:station", (req, res) => {
   let sql = ``;
 
   if (req.params.station === "collect") {
-    sql = `SELECT d.dishId, d.displayName, dio.id, dio.dishStatus, dio.orderId, o.takeAway, o.displayOrderId
+    sql = `SELECT d.dishId, d.displayName, dio.id, dio.dishStatus, dio.orderId, o.takeAway, o.displayOrderId, o.status
     FROM dishesInOrders dio 
     JOIN dishes d ON dio.dishId = d.dishId
     JOIN orders o ON dio.orderId = o.orderId
@@ -52,6 +52,7 @@ router.get("/:station", (req, res) => {
             orderId: el.orderId,
             displayOrderId: el.displayOrderId,
             takeAway: el.takeAway === 1 ? true : false,
+            status: el.status,
             items: [
               {
                 dishId: el.dishId,
@@ -76,7 +77,7 @@ router.put("/complete", (req, res) => {
   //return 400 if any of params does not match
   //return 500 if there was DB error
   //return 200 on success
-  const statuses = ["new", "rdyToPck", "done"];
+  const statuses = ["new", "inProg", "rdyToPck", "done"];
   if (req.body.id === undefined) {
     return res.status(400).json({ message: "pole id jest wymagane" });
   }

@@ -66,7 +66,9 @@ router.post("/", (req, res) => {
   // recive {items: [INT, INT], paymentMethod: INT, takeAway: BOOL}
   // return 400 if any parameter is missing
   // return 500 if there was DB error
-  // return 200 with {}
+  // return 200 with
+  // {orderId: INT, displayOrderId: INT, paymentMethod: INT, takeAway: BOOL,
+  // status: "new", items: [INT, INT]}
 
   if (
     req.body.paymentMethod === undefined ||
@@ -124,10 +126,13 @@ router.post("/", (req, res) => {
         .then(function (result) {
           const orderInsertedId = result.insertId;
           let items = "";
+          let totalPrice = 0;
 
           for (let i = 0; i < req.body.items.length; i++) {
             const itemId = req.body.items[i];
             let item = global.DISHES.find((o) => o.dishId === itemId);
+            totalPrice += item.price;
+
             if (item.isBunddle) {
               let subItems = item.bunddleItems;
               for (let i = 0; i < subItems.length; i++) {
@@ -154,6 +159,7 @@ router.post("/", (req, res) => {
               takeAway: req.body.takeAway,
               status: "new",
               items: req.body.items,
+              totalPrice: totalPrice,
             });
           });
         })
